@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KnowRoots — Who Are You In The Roots?</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Lora:ital,wght@0,400;1,400;1,500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --cream:  #FFF1D3;
+  --sienna: #73331A;
+  --brown:  #4E3B2D;
+  --forest: #2F3E2B;
+  --sand:   #DED4BF;
+  --dark:   #0d1a0c;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;font-family:'Montserrat',sans-serif;background:var(--dark);}
+
+/* CANVAS */
+#canvas{position:fixed;inset:0;z-index:0;pointer-events:none;}
+
+/* GRAIN */
+body::after{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;}
+
+/* PROGRESS BAR */
+#progress{position:fixed;top:0;left:0;right:0;height:2px;background:rgba(222,212,191,.15);z-index:100;opacity:0;transition:opacity .4s;}
+#progress.visible{opacity:1;}
+#progress-fill{height:100%;background:var(--sienna);transition:width .6s cubic-bezier(.4,0,.2,1);}
+
+/* SOUND BUTTON */
+#soundBtn{position:fixed;top:1.25rem;right:1.5rem;z-index:200;background:rgba(255,241,211,.08);border:1px solid rgba(255,241,211,.15);color:var(--sand);border-radius:50%;width:40px;height:40px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;backdrop-filter:blur(8px);}
+#soundBtn:hover{background:rgba(255,241,211,.15);}
+#soundBtn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;}
+
+/* LOGO */
+#siteLogo{position:fixed;top:1.2rem;left:1.5rem;z-index:200;opacity:0;transition:opacity .6s;}
+#siteLogo img{height:28px;width:auto;display:block;}
+
+/* STAGE */
+#stage{position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;padding:1.5rem;}
+.screen-content{width:100%;max-width:760px;opacity:0;transform:translateY(18px);transition:opacity .6s ease,transform .6s ease;}
+.screen-content.visible{opacity:1;transform:translateY(0);}
+
+/* WELCOME */
+.welcome{text-align:center;padding:2rem 1rem;}
+.welcome-eyebrow{font-size:.65rem;letter-spacing:.25em;text-transform:uppercase;color:var(--sand);opacity:.5;margin-bottom:2.5rem;}
+.welcome-title{font-family:'Oswald',sans-serif;font-size:clamp(2.8rem,8vw,5.5rem);font-weight:700;color:var(--cream);line-height:1.05;margin-bottom:1.5rem;}
+.welcome-title em{font-style:italic;font-family:'Lora',serif;color:var(--sand);font-weight:400;}
+.welcome-sub{font-size:.9rem;color:rgba(222,212,191,.6);line-height:1.8;margin-bottom:3rem;font-weight:300;}
+.welcome-meta{display:flex;align-items:center;justify-content:center;gap:2rem;margin-bottom:3rem;}
+.welcome-meta-item{display:flex;flex-direction:column;align-items:center;gap:.35rem;}
+.welcome-meta-num{font-family:'Oswald',sans-serif;font-size:1.5rem;font-weight:600;color:var(--sienna);}
+.welcome-meta-label{font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(222,212,191,.4);}
+.welcome-divider{width:1px;height:40px;background:rgba(222,212,191,.15);}
+
+/* INTRO */
+.intro{text-align:center;max-width:620px;margin:0 auto;padding:2rem 1rem;}
+.intro-line{font-family:'Lora',serif;font-size:clamp(.95rem,2.2vw,1.15rem);color:rgba(222,212,191,.85);line-height:1.9;opacity:0;transform:translateY(10px);transition:opacity .8s ease,transform .8s ease;min-height:1.4em;}
+.intro-line.shown{opacity:1;transform:translateY(0);}
+.intro-spacer{height:1.4em;}
+.intro-ready{margin-top:3rem;opacity:0;transition:opacity .8s ease;}
+.intro-ready.shown{opacity:1;}
+
+/* QUESTION */
+.question{text-align:center;width:100%;padding:1rem;}
+.q-meta{display:flex;align-items:center;justify-content:center;gap:1rem;margin-bottom:1.5rem;}
+.q-num{font-size:.65rem;letter-spacing:.25em;text-transform:uppercase;color:rgba(222,212,191,.35);font-weight:600;}
+.q-theme-tag{font-size:.6rem;letter-spacing:.18em;text-transform:uppercase;color:var(--sienna);background:rgba(115,51,26,.15);border:1px solid rgba(115,51,26,.25);padding:.25rem .75rem;border-radius:100px;}
+.q-text{font-family:'Lora',serif;font-size:clamp(1.15rem,3vw,1.55rem);color:var(--cream);line-height:1.6;margin-bottom:2.5rem;max-width:600px;margin-left:auto;margin-right:auto;font-style:italic;}
+.options{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;max-width:680px;margin:0 auto;}
+@media(max-width:560px){.options{grid-template-columns:1fr;}}
+.opt{background:rgba(255,241,211,.04);border:1px solid rgba(222,212,191,.12);border-radius:1rem;padding:1rem 1.25rem;cursor:pointer;text-align:left;transition:all .25s;display:flex;align-items:flex-start;gap:.85rem;opacity:0;transform:translateY(12px);}
+.opt.shown{opacity:1;transform:translateY(0);}
+.opt:hover{background:rgba(115,51,26,.18);border-color:rgba(115,51,26,.4);}
+.opt:active{transform:scale(.98);}
+.opt-badge{flex-shrink:0;width:26px;height:26px;border-radius:50%;background:rgba(222,212,191,.08);border:1px solid rgba(222,212,191,.15);display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;color:rgba(222,212,191,.4);letter-spacing:0;font-family:'Montserrat',sans-serif;margin-top:.05rem;}
+.opt:hover .opt-badge{background:rgba(115,51,26,.3);border-color:rgba(115,51,26,.5);color:var(--sand);}
+.opt-text{font-size:.82rem;color:rgba(222,212,191,.7);line-height:1.6;font-weight:400;}
+.opt:hover .opt-text{color:var(--cream);}
+
+/* CALCULATING */
+.calculating{text-align:center;padding:3rem;}
+.calc-label{font-size:.7rem;letter-spacing:.25em;text-transform:uppercase;color:rgba(222,212,191,.35);margin-bottom:2rem;}
+.calc-dots{display:flex;gap:.75rem;justify-content:center;}
+.calc-dot{width:8px;height:8px;border-radius:50%;background:var(--sienna);animation:calcPulse 1.2s ease-in-out infinite;}
+.calc-dot:nth-child(2){animation-delay:.2s;}
+.calc-dot:nth-child(3){animation-delay:.4s;}
+@keyframes calcPulse{0%,100%{opacity:.2;transform:scale(.8);}50%{opacity:1;transform:scale(1.2);}}
+
+/* RESULT */
+.result{text-align:center;padding:1rem;}
+.result-prelude{font-size:.7rem;letter-spacing:.25em;text-transform:uppercase;color:rgba(222,212,191,.4);margin-bottom:1.25rem;opacity:0;transition:opacity .8s;}
+.result-prelude.shown{opacity:1;}
+.result-name{font-family:'Oswald',sans-serif;font-size:clamp(2.5rem,7vw,5rem);font-weight:700;color:var(--cream);line-height:1.05;margin-bottom:.25rem;opacity:0;transform:translateY(16px);transition:opacity .8s .2s,transform .8s .2s;}
+.result-name.shown{opacity:1;transform:translateY(0);}
+.result-value{font-size:.65rem;letter-spacing:.25em;text-transform:uppercase;color:var(--sienna);margin-bottom:2.5rem;opacity:0;transition:opacity .8s .5s;}
+.result-value.shown{opacity:1;}
+.result-layout{display:grid;grid-template-columns:1fr 1fr;gap:2rem;text-align:left;margin-bottom:2rem;}
+@media(max-width:580px){.result-layout{grid-template-columns:1fr;}}
+.result-image{border-radius:1.5rem;overflow:hidden;background:rgba(255,241,211,.04);border:1px solid rgba(222,212,191,.1);aspect-ratio:1;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .8s .6s;}
+.result-image.shown{opacity:1;}
+.result-image svg{width:60%;height:60%;opacity:.7;}
+.result-info{display:flex;flex-direction:column;gap:1.25rem;opacity:0;transition:opacity .8s .8s;}
+.result-info.shown{opacity:1;}
+.result-bg{font-family:'Lora',serif;font-size:.88rem;color:rgba(222,212,191,.7);line-height:1.8;font-style:italic;}
+.result-attrs-title{font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:var(--sienna);margin-bottom:.6rem;}
+.result-attr{font-size:.78rem;color:rgba(222,212,191,.6);line-height:1.6;display:flex;gap:.5rem;align-items:flex-start;}
+.result-attr::before{content:'—';color:rgba(115,51,26,.5);flex-shrink:0;}
+.result-strength{background:rgba(115,51,26,.12);border:1px solid rgba(115,51,26,.2);border-radius:.75rem;padding:.85rem 1rem;}
+.result-strength-label{font-size:.55rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(115,51,26,.7);margin-bottom:.3rem;}
+.result-strength-val{font-size:.82rem;color:var(--sand);font-weight:500;}
+
+/* CONCLUSION */
+.conclusion{text-align:center;max-width:580px;margin:0 auto;padding:2rem 1rem;}
+.conc-line{font-family:'Lora',serif;font-size:clamp(.9rem,2vw,1.05rem);color:rgba(222,212,191,.75);line-height:1.95;opacity:0;transform:translateY(8px);transition:opacity .7s ease,transform .7s ease;}
+.conc-line.shown{opacity:1;transform:translateY(0);}
+.conc-spacer{height:1.4em;}
+.conc-actions{margin-top:3rem;display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;opacity:0;transition:opacity .8s;}
+.conc-actions.shown{opacity:1;}
+
+/* BUTTONS */
+.btn{display:inline-block;font-family:'Montserrat',sans-serif;font-size:.75rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;border-radius:100px;padding:.9rem 2.25rem;cursor:pointer;transition:all .2s;border:none;text-decoration:none;}
+.btn-primary{background:var(--sienna);color:var(--cream);}
+.btn-primary:hover{background:#8a3e20;transform:translateY(-1px);}
+.btn-outline{background:transparent;color:var(--sand);border:1.5px solid rgba(222,212,191,.2);}
+.btn-outline:hover{background:rgba(222,212,191,.07);border-color:rgba(222,212,191,.35);}
+
+/* BG GRADIENT - shifts per question */
+.bg-welcome{background:radial-gradient(ellipse at 30% 60%,rgba(47,62,43,.9),var(--dark));}
+.bg-intro{background:radial-gradient(ellipse at 70% 40%,rgba(78,59,45,.5),var(--dark));}
+.bg-q{background:radial-gradient(ellipse at 50% 50%,rgba(47,62,43,.6),var(--dark));}
+.bg-result{background:radial-gradient(ellipse at 40% 50%,rgba(115,51,26,.35),var(--dark));}
+</style>
+</head>
+<body>
+
+<canvas id="canvas"></canvas>
+
+<audio id="bgAudio" loop preload="auto">
+  <source src="personality quiz/assets/audio/ES_Daybreak - Laura Platt.mp3" type="audio/mpeg">
+</audio>
+
+<div id="progress"><div id="progress-fill"></div></div>
+
+<div id="siteLogo">
+  <img src="knowroots/logo cream.jpg" alt="KnowRoots">
+</div>
+
+<button id="soundBtn" title="Toggle sound" onclick="toggleSound()">
+  <svg id="soundIcon" viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path id="soundWave1" d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path id="soundWave2" d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+</button>
+
+<div id="stage">
+  <div class="screen-content" id="content"></div>
+</div>
+
+<script>
+/* ─── DATA ─────────────────────────────────────────────── */
+
+const INTRO_LINES = [
+  "You have entered a new world.",
+  "Not one of fantasy, but of lived stories.",
+  "",
+  "Here, knowledge is passed through hands, land, and memory.",
+  "Roots are not something you look back on —",
+  "they are something you live with.",
+  "",
+  "Walk with us into the highlands of Chiang Mai,",
+  "and begin a journey through the lives, values,",
+  "and wisdom of the Karen and Moung communities.",
+  "",
+  "This is not a test of who you are —",
+  "but an invitation to discover how you relate to the world.",
+];
+
+const CONCLUSION_LINES = [
+  "This journey does not end with a result.",
+  "",
+  "What you discovered is not a label,",
+  "but a way you relate to the world —",
+  "how you learn, care, adapt, and connect.",
+  "",
+  "Every community holds knowledge shaped by land, memory, and lived experience.",
+  "To engage with it is not to claim it,",
+  "but to listen with respect and walk with care.",
+  "",
+  "As you leave this space,",
+  "carry your curiosity gently,",
+  "and remember: understanding grows",
+  "not from knowing more,",
+  "but from listening better.",
+];
+
+const QUESTIONS = [
+  {
+    theme: "Knowledge and Learning",
+    text: "When learning something new, you prefer to:",
+    options: [
+      { label:"A", text:"Learn through hands-on experience and trial", archetype:"pathfinder" },
+      { label:"B", text:"Listen, observe, and reflect before acting", archetype:"seeker" },
+      { label:"C", text:"Learn from others and exchange perspectives", archetype:"connector" },
+      { label:"D", text:"Learn carefully, ensuring what you learn is used responsibly", archetype:"caretaker" },
+    ]
+  },
+  {
+    theme: "Relationship with Nature",
+    text: "Nature feels most meaningful to you when it is:",
+    options: [
+      { label:"A", text:"A living system to be protected and sustained", archetype:"caretaker" },
+      { label:"B", text:"A space for exploration and discovery", archetype:"pathfinder" },
+      { label:"C", text:"A teacher that reveals lessons over time", archetype:"seeker" },
+      { label:"D", text:"A shared space that connects people and communities", archetype:"connector" },
+    ]
+  },
+  {
+    theme: "Tradition and Change",
+    text: "When traditions face change, you believe we should:",
+    options: [
+      { label:"A", text:"Adapt them so they remain relevant", archetype:"pathfinder" },
+      { label:"B", text:"Preserve their core meaning with care", archetype:"caretaker" },
+      { label:"C", text:"Understand their origins before deciding", archetype:"seeker" },
+      { label:"D", text:"Share them widely so others can learn from them", archetype:"connector" },
+    ]
+  },
+  {
+    theme: "Story and Memory",
+    text: "Stories are important because they:",
+    options: [
+      { label:"A", text:"Carry lessons that guide future choices", archetype:"pathfinder" },
+      { label:"B", text:"Help us understand who we are and where we come from", archetype:"seeker" },
+      { label:"C", text:"Allow knowledge to be passed across people and time", archetype:"connector" },
+      { label:"D", text:"Preserve memories that might otherwise be lost", archetype:"caretaker" },
+    ]
+  },
+  {
+    theme: "Entering a New Place",
+    text: "When entering an unfamiliar place, you tend to:",
+    options: [
+      { label:"A", text:"Observe quietly before taking action", archetype:"seeker" },
+      { label:"B", text:"Look for people to connect with and learn from", archetype:"connector" },
+      { label:"C", text:"Explore with openness and adaptability", archetype:"pathfinder" },
+      { label:"D", text:"Be mindful of how your presence affects others", archetype:"caretaker" },
+    ]
+  },
+  {
+    theme: "Facing the Unknown",
+    text: "When faced with uncertainty, you usually:",
+    options: [
+      { label:"A", text:"Step forward and learn along the way", archetype:"pathfinder" },
+      { label:"B", text:"Take time to reflect and understand", archetype:"seeker" },
+      { label:"C", text:"Seek perspectives from others", archetype:"connector" },
+      { label:"D", text:"Consider how your choices may impact those around you", archetype:"caretaker" },
+    ]
+  },
+  {
+    theme: "Love and Care",
+    text: "You show care most often by:",
+    options: [
+      { label:"A", text:"Protecting and supporting others consistently", archetype:"caretaker" },
+      { label:"B", text:"Being present and listening deeply", archetype:"seeker" },
+      { label:"C", text:"Helping people connect and feel included", archetype:"connector" },
+      { label:"D", text:"Taking initiative to improve situations", archetype:"pathfinder" },
+    ]
+  },
+  {
+    theme: "Curiosity",
+    text: "Your curiosity shows up when you:",
+    options: [
+      { label:"A", text:"Ask thoughtful questions", archetype:"seeker" },
+      { label:"B", text:"Explore new experiences", archetype:"pathfinder" },
+      { label:"C", text:"Listen to different viewpoints", archetype:"connector" },
+      { label:"D", text:"Seek deeper understanding before acting", archetype:"caretaker" },
+    ]
+  },
+  {
+    theme: "Adapting to Changes",
+    text: "When change happens, you tend to:",
+    options: [
+      { label:"A", text:"Adjust quickly and find new ways forward", archetype:"pathfinder" },
+      { label:"B", text:"Pause and reflect before responding", archetype:"seeker" },
+      { label:"C", text:"Help others navigate the change together", archetype:"connector" },
+      { label:"D", text:"Ensure important values are not lost", archetype:"caretaker" },
+    ]
+  },
+  {
+    theme: "Future Career",
+    text: "A future career that feels meaningful to you would involve:",
+    options: [
+      { label:"A", text:"Caring for people, communities, or the environment", archetype:"caretaker" },
+      { label:"B", text:"Exploring new ideas, fields, or paths", archetype:"pathfinder" },
+      { label:"C", text:"Learning, researching, or teaching", archetype:"seeker" },
+      { label:"D", text:"Bringing people, ideas, or systems together", archetype:"connector" },
+    ]
+  },
+];
+
+const ARCHETYPES = {
+  caretaker: {
+    name: "The Caretaker",
+    guiding: "Responsibility",
+    strength: "Sustaining what matters so it can endure",
+    background: "You move through the world with attentiveness and responsibility. You notice what others overlook — the quiet needs, the fragile balance, the things that must be protected to endure. Whether it is people, land, or tradition, you feel a duty to nurture what has been entrusted to you, so it may continue for those who come after.",
+    attributes: [
+      "Deep sense of responsibility",
+      "Attentive to people, land, and continuity",
+      "Values protection, stewardship, and care",
+      "Thinks long-term and intergenerationally",
+      "Acts quietly but consistently",
+    ],
+    svg: `<svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="100" cy="100" r="80" stroke="#DED4BF" stroke-width="1" opacity="0.2"/>
+      <circle cx="100" cy="100" r="55" stroke="#DED4BF" stroke-width="1" opacity="0.3"/>
+      <circle cx="100" cy="100" r="30" stroke="#DED4BF" stroke-width="1" opacity="0.4"/>
+      <path d="M80 110 C80 95 100 80 100 80 C100 80 120 95 120 110 C120 125 112 135 100 138 C88 135 80 125 80 110Z" stroke="#FFF1D3" stroke-width="1.5" fill="rgba(255,241,211,0.06)"/>
+      <path d="M70 108 C60 95 65 78 78 72" stroke="#DED4BF" stroke-width="1" opacity="0.4" stroke-linecap="round"/>
+      <path d="M130 108 C140 95 135 78 122 72" stroke="#DED4BF" stroke-width="1" opacity="0.4" stroke-linecap="round"/>
+    </svg>`,
+  },
+  pathfinder: {
+    name: "The Pathfinder",
+    guiding: "Growth",
+    strength: "Finding new ways forward",
+    background: "You learn by walking forward. You are not afraid of uncertainty, and you trust experience as your teacher. While you respect the past, you believe growth comes from movement and adaptation. You explore new paths not to abandon what exists, but to find ways for it to survive in changing times.",
+    attributes: [
+      "Action-oriented and adaptable",
+      "Learns through experience and movement",
+      "Comfortable with uncertainty",
+      "Sees change as opportunity",
+      "Balances respect for tradition with innovation",
+    ],
+    svg: `<svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="100" cy="100" r="3" fill="#FFF1D3" opacity="0.8"/>
+      <line x1="100" y1="100" x2="100" y2="30" stroke="#DED4BF" stroke-width="1.5" opacity="0.6" stroke-linecap="round"/>
+      <line x1="100" y1="100" x2="100" y2="170" stroke="#DED4BF" stroke-width="1" opacity="0.2" stroke-linecap="round"/>
+      <line x1="100" y1="100" x2="30" y2="100" stroke="#DED4BF" stroke-width="1" opacity="0.2" stroke-linecap="round"/>
+      <line x1="100" y1="100" x2="170" y2="100" stroke="#DED4BF" stroke-width="1" opacity="0.2" stroke-linecap="round"/>
+      <circle cx="100" cy="30" r="5" fill="none" stroke="#FFF1D3" stroke-width="1.5" opacity="0.6"/>
+      <path d="M60 140 Q100 110 140 140" stroke="#DED4BF" stroke-width="1" opacity="0.3" fill="none" stroke-linecap="round"/>
+      <path d="M72 148 Q100 120 128 148" stroke="#DED4BF" stroke-width="1" opacity="0.2" fill="none" stroke-linecap="round"/>
+      <circle cx="100" cy="100" r="60" stroke="#DED4BF" stroke-width="1" opacity="0.1"/>
+      <circle cx="100" cy="100" r="85" stroke="#DED4BF" stroke-width="1" opacity="0.07"/>
+      <path d="M94 45 L100 30 L106 45" fill="none" stroke="#FFF1D3" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.7"/>
+    </svg>`,
+  },
+  seeker: {
+    name: "The Seeker",
+    guiding: "Curiosity",
+    strength: "Learning with humility",
+    background: "You are guided by curiosity rather than certainty. You ask questions gently, listen deeply, and accept that understanding takes time. You do not rush to conclusions. Instead, you believe learning is lifelong — shaped by stories, people, and moments of quiet reflection.",
+    attributes: [
+      "Curious and reflective",
+      "Comfortable with not having all the answers",
+      "Listens deeply before acting",
+      "Values stories, observation, and learning",
+      "Sees understanding as a lifelong process",
+    ],
+    svg: `<svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="100" cy="95" rx="45" ry="28" stroke="#FFF1D3" stroke-width="1.5" fill="rgba(255,241,211,0.04)" opacity="0.7"/>
+      <circle cx="100" cy="95" r="10" stroke="#FFF1D3" stroke-width="1.5" opacity="0.8"/>
+      <circle cx="100" cy="95" r="4" fill="#DED4BF" opacity="0.6"/>
+      <path d="M75 78 Q100 55 125 78" stroke="#DED4BF" stroke-width="1" opacity="0.25" fill="none" stroke-linecap="round"/>
+      <path d="M75 112 Q100 135 125 112" stroke="#DED4BF" stroke-width="1" opacity="0.25" fill="none" stroke-linecap="round"/>
+      <circle cx="100" cy="95" r="65" stroke="#DED4BF" stroke-width="1" opacity="0.1"/>
+      <line x1="100" y1="30" x2="100" y2="160" stroke="#DED4BF" stroke-width="1" opacity="0.06" stroke-dasharray="3 6"/>
+      <line x1="35" y1="95" x2="165" y2="95" stroke="#DED4BF" stroke-width="1" opacity="0.06" stroke-dasharray="3 6"/>
+      <circle cx="128" cy="123" r="14" stroke="#DED4BF" stroke-width="1" opacity="0.3"/>
+      <line x1="138" y1="133" x2="150" y2="145" stroke="#DED4BF" stroke-width="2" stroke-linecap="round" opacity="0.4"/>
+    </svg>`,
+  },
+  connector: {
+    name: "The Connector",
+    guiding: "Belonging",
+    strength: "Strengthening connections",
+    background: "You see relationships everywhere. Between people and place, past and present, stories and action. You believe knowledge grows stronger when shared. Your strength lies in bringing voices together, helping ideas travel, and ensuring no story stands alone.",
+    attributes: [
+      "Relationship-focused and inclusive",
+      "Brings people and ideas together",
+      "Values shared knowledge and dialogue",
+      "Sensitive to context and community dynamics",
+      "Sees meaning in collaboration",
+    ],
+    svg: `<svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="100" cy="100" r="6" fill="#FFF1D3" opacity="0.8"/>
+      <circle cx="55"  cy="70"  r="5" fill="#DED4BF" opacity="0.6"/>
+      <circle cx="145" cy="70"  r="5" fill="#DED4BF" opacity="0.6"/>
+      <circle cx="55"  cy="130" r="5" fill="#DED4BF" opacity="0.6"/>
+      <circle cx="145" cy="130" r="5" fill="#DED4BF" opacity="0.6"/>
+      <circle cx="100" cy="40"  r="4" fill="#DED4BF" opacity="0.4"/>
+      <circle cx="100" cy="160" r="4" fill="#DED4BF" opacity="0.4"/>
+      <circle cx="40"  cy="100" r="4" fill="#DED4BF" opacity="0.4"/>
+      <circle cx="160" cy="100" r="4" fill="#DED4BF" opacity="0.4"/>
+      <line x1="100" y1="100" x2="55"  y2="70"  stroke="#DED4BF" stroke-width="1" opacity="0.35"/>
+      <line x1="100" y1="100" x2="145" y2="70"  stroke="#DED4BF" stroke-width="1" opacity="0.35"/>
+      <line x1="100" y1="100" x2="55"  y2="130" stroke="#DED4BF" stroke-width="1" opacity="0.35"/>
+      <line x1="100" y1="100" x2="145" y2="130" stroke="#DED4BF" stroke-width="1" opacity="0.35"/>
+      <line x1="100" y1="100" x2="100" y2="40"  stroke="#DED4BF" stroke-width="1" opacity="0.2"/>
+      <line x1="100" y1="100" x2="100" y2="160" stroke="#DED4BF" stroke-width="1" opacity="0.2"/>
+      <line x1="100" y1="100" x2="40"  y2="100" stroke="#DED4BF" stroke-width="1" opacity="0.2"/>
+      <line x1="100" y1="100" x2="160" y2="100" stroke="#DED4BF" stroke-width="1" opacity="0.2"/>
+      <line x1="55"  y1="70"  x2="145" y2="70"  stroke="#DED4BF" stroke-width="1" opacity="0.12"/>
+      <line x1="55"  y1="70"  x2="55"  y2="130" stroke="#DED4BF" stroke-width="1" opacity="0.12"/>
+      <line x1="145" y1="70"  x2="145" y2="130" stroke="#DED4BF" stroke-width="1" opacity="0.12"/>
+      <line x1="55"  y1="130" x2="145" y2="130" stroke="#DED4BF" stroke-width="1" opacity="0.12"/>
+    </svg>`,
+  },
+};
+
+/* ─── STATE ─────────────────────────────────────────────── */
+
+let state = 'welcome'; // welcome | intro | question | calculating | result | conclusion
+let currentQ = 0;
+let scores = { caretaker: 0, pathfinder: 0, seeker: 0, connector: 0 };
+let soundOn = false;
+let transitioning = false;
+
+/* ─── CANVAS PARTICLES ───────────────────────────────────── */
+
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+let particles = [];
+
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+
+function initParticles() {
+  particles = [];
+  const count = Math.min(60, Math.floor((window.innerWidth * window.innerHeight) / 18000));
+  for (let i = 0; i < count; i++) {
+    particles.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      r: Math.random() * 1.5 + 0.5,
+      vx: (Math.random() - 0.5) * 0.25,
+      vy: -Math.random() * 0.3 - 0.1,
+      alpha: Math.random() * 0.35 + 0.05,
+      life: Math.random(),
+    });
+  }
+}
+
+function animateCanvas() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  particles.forEach(p => {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.life += 0.003;
+    const a = p.alpha * Math.sin(p.life * Math.PI);
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(222,212,191,${Math.max(0, a)})`;
+    ctx.fill();
+    if (p.y < -10 || p.life > 1) {
+      p.x = Math.random() * canvas.width;
+      p.y = canvas.height + 10;
+      p.life = 0;
+      p.vx = (Math.random() - 0.5) * 0.25;
+    }
+  });
+  requestAnimationFrame(animateCanvas);
+}
+
+window.addEventListener('resize', () => { resizeCanvas(); initParticles(); });
+resizeCanvas();
+initParticles();
+animateCanvas();
+
+/* ─── SCREEN TRANSITIONS ─────────────────────────────────── */
+
+function transition(renderFn) {
+  if (transitioning) return;
+  transitioning = true;
+  const content = document.getElementById('content');
+  content.classList.remove('visible');
+  setTimeout(() => {
+    renderFn();
+    setTimeout(() => {
+      content.classList.add('visible');
+      transitioning = false;
+    }, 60);
+  }, 500);
+}
+
+/* ─── SOUND ──────────────────────────────────────────────── */
+
+const audio = document.getElementById('bgAudio');
+audio.volume = 0.35;
+
+function toggleSound() {
+  soundOn = !soundOn;
+  if (soundOn) {
+    audio.play().catch(() => {});
+    document.getElementById('soundWave1').style.opacity = '1';
+    document.getElementById('soundWave2').style.opacity = '1';
+  } else {
+    audio.pause();
+    document.getElementById('soundWave1').style.opacity = '0.2';
+    document.getElementById('soundWave2').style.opacity = '0.2';
+  }
+}
+
+function startAudio() {
+  if (!soundOn) {
+    soundOn = true;
+    audio.play().catch(() => { soundOn = false; });
+    document.getElementById('soundWave1').style.opacity = '1';
+    document.getElementById('soundWave2').style.opacity = '1';
+  }
+}
+
+/* ─── PROGRESS ───────────────────────────────────────────── */
+
+function setProgress(n, total) {
+  const bar = document.getElementById('progress');
+  const fill = document.getElementById('progress-fill');
+  if (total === 0) {
+    bar.classList.remove('visible');
+  } else {
+    bar.classList.add('visible');
+    fill.style.width = ((n / total) * 100) + '%';
+  }
+}
+
+/* ─── LOGO ───────────────────────────────────────────────── */
+
+function showLogo(show) {
+  document.getElementById('siteLogo').style.opacity = show ? '1' : '0';
+}
+
+/* ─── SCREENS ────────────────────────────────────────────── */
+
+function renderWelcome() {
+  setProgress(0, 0);
+  showLogo(true);
+  document.body.style.background = 'radial-gradient(ellipse at 30% 60%, rgba(47,62,43,0.9), #0d1a0c)';
+  document.getElementById('content').innerHTML = `
+    <div class="welcome">
+      <p class="welcome-eyebrow">KnowRoots · Personality Journey</p>
+      <h1 class="welcome-title">Who Are You<br><em>In The Roots?</em></h1>
+      <p class="welcome-sub">An invitation to discover how you relate to land, memory,<br>and the living knowledge of indigenous communities.</p>
+      <div class="welcome-meta">
+        <div class="welcome-meta-item">
+          <span class="welcome-meta-num">10</span>
+          <span class="welcome-meta-label">Questions</span>
+        </div>
+        <div class="welcome-divider"></div>
+        <div class="welcome-meta-item">
+          <span class="welcome-meta-num">4</span>
+          <span class="welcome-meta-label">Archetypes</span>
+        </div>
+        <div class="welcome-divider"></div>
+        <div class="welcome-meta-item">
+          <span class="welcome-meta-num">∞</span>
+          <span class="welcome-meta-label">Reflection</span>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="goIntro()">Begin Your Journey</button>
+    </div>
+  `;
+}
+
+function goIntro() {
+  startAudio();
+  transition(renderIntro);
+}
+
+function renderIntro() {
+  setProgress(0, 0);
+  showLogo(false);
+  document.body.style.background = 'radial-gradient(ellipse at 60% 40%, rgba(78,59,45,0.5), #0d1a0c)';
+  let html = '<div class="intro">';
+  INTRO_LINES.forEach((line, i) => {
+    if (line === '') {
+      html += `<div class="intro-spacer"></div>`;
+    } else {
+      html += `<div class="intro-line" id="iline${i}">${line}</div>`;
+    }
+  });
+  html += `<div class="intro-ready" id="introReady">
+    <button class="btn btn-outline" onclick="startQuiz()">I am ready &rarr;</button>
+  </div></div>`;
+  document.getElementById('content').innerHTML = html;
+
+  let delay = 400;
+  INTRO_LINES.forEach((line, i) => {
+    if (line !== '') {
+      setTimeout(() => {
+        const el = document.getElementById('iline' + i);
+        if (el) el.classList.add('shown');
+      }, delay);
+      delay += 300;
+    } else {
+      delay += 100;
+    }
+  });
+  setTimeout(() => {
+    const r = document.getElementById('introReady');
+    if (r) r.classList.add('shown');
+  }, delay + 400);
+}
+
+function startQuiz() {
+  currentQ = 0;
+  scores = { caretaker: 0, pathfinder: 0, seeker: 0, connector: 0 };
+  transition(() => renderQuestion(currentQ));
+}
+
+function renderQuestion(idx) {
+  const q = QUESTIONS[idx];
+  setProgress(idx + 1, QUESTIONS.length);
+  showLogo(false);
+  const hue = 120 + idx * 4;
+  document.body.style.background = `radial-gradient(ellipse at ${40 + idx * 3}% 50%, rgba(47,62,43,0.65), #0d1a0c)`;
+  document.getElementById('content').innerHTML = `
+    <div class="question">
+      <div class="q-meta">
+        <span class="q-num">Question ${idx + 1} of ${QUESTIONS.length}</span>
+        <span class="q-theme-tag">${q.theme}</span>
+      </div>
+      <h2 class="q-text">${q.text}</h2>
+      <div class="options" id="opts">
+        ${q.options.map((opt, oi) => `
+          <button class="opt" id="opt${oi}" onclick="answer('${opt.archetype}')">
+            <span class="opt-badge">${opt.label}</span>
+            <span class="opt-text">${opt.text}</span>
+          </button>
+        `).join('')}
+      </div>
+    </div>
+  `;
+  q.options.forEach((_, oi) => {
+    setTimeout(() => {
+      const el = document.getElementById('opt' + oi);
+      if (el) el.classList.add('shown');
+    }, 200 + oi * 100);
+  });
+}
+
+function answer(archetype) {
+  if (transitioning) return;
+  scores[archetype]++;
+  currentQ++;
+  if (currentQ < QUESTIONS.length) {
+    transition(() => renderQuestion(currentQ));
+  } else {
+    transition(renderCalculating);
+  }
+}
+
+function renderCalculating() {
+  setProgress(QUESTIONS.length, QUESTIONS.length);
+  showLogo(false);
+  document.body.style.background = 'radial-gradient(ellipse at 50% 50%, rgba(115,51,26,0.25), #0d1a0c)';
+  document.getElementById('content').innerHTML = `
+    <div class="calculating">
+      <p class="calc-label">Reading your path</p>
+      <div class="calc-dots">
+        <span class="calc-dot"></span>
+        <span class="calc-dot"></span>
+        <span class="calc-dot"></span>
+      </div>
+    </div>
+  `;
+  setTimeout(() => transition(renderResult), 2400);
+}
+
+function getTopArchetype() {
+  return Object.entries(scores).sort((a, b) => b[1] - a[1])[0][0];
+}
+
+function renderResult() {
+  setProgress(0, 0);
+  showLogo(true);
+  const key = getTopArchetype();
+  const a = ARCHETYPES[key];
+  document.body.style.background = 'radial-gradient(ellipse at 40% 45%, rgba(115,51,26,0.4), #0d1a0c)';
+  document.getElementById('content').innerHTML = `
+    <div class="result">
+      <p class="result-prelude" id="rp">You are</p>
+      <h1 class="result-name" id="rn">${a.name}</h1>
+      <p class="result-value" id="rv">Guiding Value: ${a.guiding}</p>
+      <div class="result-layout">
+        <div class="result-image" id="ri">${a.svg}</div>
+        <div class="result-info" id="rin">
+          <p class="result-bg">${a.background}</p>
+          <div>
+            <p class="result-attrs-title">Key Attributes</p>
+            ${a.attributes.map(attr => `<p class="result-attr">${attr}</p>`).join('')}
+          </div>
+          <div class="result-strength">
+            <p class="result-strength-label">Core Strength</p>
+            <p class="result-strength-val">${a.strength}</p>
+          </div>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:1rem;">
+        <button class="btn btn-outline" onclick="goConclusion()">Reflect &rarr;</button>
+      </div>
+    </div>
+  `;
+  setTimeout(() => { const el = document.getElementById('rp'); if(el) el.classList.add('shown'); }, 100);
+  setTimeout(() => { const el = document.getElementById('rn'); if(el) el.classList.add('shown'); }, 300);
+  setTimeout(() => { const el = document.getElementById('rv'); if(el) el.classList.add('shown'); }, 600);
+  setTimeout(() => { const el = document.getElementById('ri'); if(el) el.classList.add('shown'); }, 700);
+  setTimeout(() => { const el = document.getElementById('rin'); if(el) el.classList.add('shown'); }, 900);
+}
+
+function goConclusion() {
+  transition(renderConclusion);
+}
+
+function renderConclusion() {
+  setProgress(0, 0);
+  showLogo(true);
+  document.body.style.background = 'radial-gradient(ellipse at 60% 50%, rgba(47,62,43,0.6), #0d1a0c)';
+  let html = '<div class="conclusion">';
+  CONCLUSION_LINES.forEach((line, i) => {
+    if (line === '') {
+      html += `<div class="conc-spacer"></div>`;
+    } else {
+      html += `<div class="conc-line" id="cline${i}">${line}</div>`;
+    }
+  });
+  html += `<div class="conc-actions" id="concActions">
+    <a href="knowroots-site.html" class="btn btn-outline">Return to KnowRoots</a>
+    <button class="btn btn-primary" onclick="restartQuiz()">Try Again</button>
+  </div></div>`;
+  document.getElementById('content').innerHTML = html;
+
+  let delay = 300;
+  CONCLUSION_LINES.forEach((line, i) => {
+    if (line !== '') {
+      setTimeout(() => {
+        const el = document.getElementById('cline' + i);
+        if (el) el.classList.add('shown');
+      }, delay);
+      delay += 280;
+    } else {
+      delay += 80;
+    }
+  });
+  setTimeout(() => {
+    const el = document.getElementById('concActions');
+    if (el) el.classList.add('shown');
+  }, delay + 400);
+}
+
+function restartQuiz() {
+  transition(renderWelcome);
+}
+
+/* ─── INIT ───────────────────────────────────────────────── */
+
+document.getElementById('soundWave1').style.opacity = '0.2';
+document.getElementById('soundWave2').style.opacity = '0.2';
+
+renderWelcome();
+setTimeout(() => {
+  document.getElementById('content').classList.add('visible');
+}, 100);
+</script>
+</body>
+</html>
